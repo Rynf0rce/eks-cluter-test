@@ -1,13 +1,13 @@
 variable "project_name" {
   description = "Project name that the EKS cluster will use"
   type        = string
-  default     = "eks-cluster"
+  default     = "jinwoo-eks-cluster"
 }
 
 variable "eks_cluster_version" {
   description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.27`)"
   type        = string
-  default     = "1.30"
+  default     = "1.32"
 }
 
 variable "node_group_name" {
@@ -19,13 +19,13 @@ variable "node_group_name" {
 variable "vpc_cidr" {
   description = "CIDR for the VPC that the EKS cluster will use"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "10.39.0.0/16"
 }
 
 variable "deploy_region" {
   description = "The AWS region to deploy into (e.g. us-east-1)"
   type        = string
-  default     = "us-east-2"
+  default     = "ap-northeast-3"
 }
 
 variable "aws_alb_controller_name" {
@@ -43,7 +43,7 @@ variable "aws_load_balancer_controller_image_tag" {
 variable "eks_managed_nodes_instance_types" {
   description = "Desired instance type(s) to use as worker node(s)"
   type        = list(string)
-  default     = ["t3.medium", "t3a.medium"]
+  default     = ["t3.medium"]
 }
 
 variable "eks_managed_nodes_capacity_type" {
@@ -59,7 +59,7 @@ variable "eks_managed_nodes_capacity_type" {
 variable "kube_prometheus_stack_chart_version" {
   description = "Desired Kube Prometheus Stack Help chart version"
   type        = string
-  default     = "62.6.0"
+  default     = "69.5.2"
 }
 
 variable "karpenter_chart_version" {
@@ -71,7 +71,7 @@ variable "karpenter_chart_version" {
 variable "karpenter_arch_choices" {
   description = "Allowed Karpenter node architecture choices"
   type        = list(string)
-  default     = ["amd64", "arm64"]
+  default     = ["amd64"]
 }
 
 variable "karpenter_instance_cpu_choices" {
@@ -97,7 +97,7 @@ variable "karpenter_instance_category_choices" {
 variable "external_secrets_service_account_name" {
   description = "external secrets addon service account name"
   type        = string
-  default     = "external-secrets-sa"
+  default     = "jinwoo-external-secrets-sa"
 }
 
 variable "external_secrets_helm_chart_version" {

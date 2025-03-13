@@ -3,11 +3,13 @@
 ## IT IS ONLY USED FOR KARPENTER INSTALLATION
 provider "aws" {
   region = "us-east-1"
+  profile = "jinwoo"
   alias  = "virginia"
 }
 
 provider "aws" {
   region = var.deploy_region
+  profile = "jinwoo"
   alias  = "ohio"
 }
 
@@ -143,7 +145,7 @@ module "ebs_csi_driver_irsa" {
 
 module "eks_blueprints_addons" {
   source  = "aws-ia/eks-blueprints-addons/aws"
-  version = "1.16.3"
+  version = "~> 1.0"
 
   cluster_name      = module.eks.cluster_name
   cluster_endpoint  = module.eks.cluster_endpoint
@@ -326,7 +328,7 @@ YAML
 ###############################################################################
 # Expose Grafana with ALB ingress
 ###############################################################################
-resource "kubectl_manifest" "set_grafana_ingrss_alb" {
+/*resource "kubectl_manifest" "set_grafana_ingrss_alb" {
   yaml_body = templatefile("${path.module}/grafana.yml", {})
 
   depends_on = [
@@ -334,4 +336,4 @@ resource "kubectl_manifest" "set_grafana_ingrss_alb" {
     module.eks_blueprints_addons.kube_prometheus_stack,
     module.aws-auth
   ]
-}
+}*/

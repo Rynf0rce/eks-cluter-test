@@ -1,0 +1,20 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: prometheus-scaledobject
+  namespace: echoserver
+spec:
+  scaleTargetRef:
+    name: echoserver
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring
+        metricName: http_requests_per_second
+        threshold: '100'
+        query: |
+          sum(rate(http_requests_total{namespace="my-ns",job="web-app"}[2m])) by (pod)

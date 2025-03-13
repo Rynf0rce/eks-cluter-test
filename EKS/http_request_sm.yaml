@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: autoscaling-servicemonitor
+  namespace: monitoring  # Prometheus가 모니터링 리소스를 찾는 네임스페이스
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: autoscaling
+      release: prom
+  namespaceSelector:
+    matchNames:
+      - custom-metrics
+  endpoints:
+    - port: "80"       # 서비스에 노출된 포트. Service에서 정의된 포트 번호 또는 이름과 일치해야 함.
+      interval: 15s

@@ -1,0 +1,54 @@
+# thanos-values.yaml
+
+# All-in-One 모드 설정
+mode: "all-in-one"
+
+# 기존 Prometheus와 연동하기 위해 Sidecar를 활성화합니다.
+prometheus:
+  enabled: true
+  # Prometheus가 설치된 네임스페이스 및 서비스명을 지정하세요.
+  # 만약 Prometheus에 sidecar가 이미 붙어 있다면 이 부분은 생략할 수 있습니다.
+  sidecar:
+    enabled: true
+    # Prometheus sidecar가 사용하는 port (일반적으로 10902, 10901 등)
+    httpPort: 10902
+
+# S3 오브젝트 스토리지 설정
+objstoreConfig:
+  type: s3
+  config:
+    bucket: "250228-jinwoojeong-bucket"        # 실제 S3 버킷 이름으로 교체
+    endpoint: "s3.ap-northeast-3.amazonaws.com "         # AWS S3의 경우
+    insecure: false
+    region: "ap-northeast-3"              # 사용 중인 리전으로 설정
+
+# Thanos Querier를 Ingress로 노출
+querier:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: 9090
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: "alb"
+      alb.ingress.kubernetes.io/scheme: "internet-facing"
+      alb.ingress.kubernetes.io/target-type: "ip"
+    hosts:
+      - host: thanos.yourdomain.com   # 실제 도메인명으로 변경
+        paths:
+          - path: /
+            pathType: Prefix
+
+# 기타 컴포넌트 (Compactor, Ruler 등) 필요에 따라 활성화
+compactor:
+  enabled: true
+  retentionResolutionRaw: "30d"
+  # 추가 설정 가능
+
+ruler:
+  enabled: false   # 필요 시 활성화하고 설정 추가
+
+# Global common settings
+logLevel: info
+replicaCount: 1

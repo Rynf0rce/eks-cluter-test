@@ -3,6 +3,7 @@
 #---------------------------------------------------------------
 provider "aws" {
   region = var.deploy_region
+  profile = "jinwoo"
 }
 
 module "vpc" {
@@ -14,7 +15,7 @@ module "vpc" {
 
   azs             = local.azs
   public_subnets  = [for k, v in local.azs : cidrsubnet(var.vpc_cidr, 8, k)]
-  private_subnets = ["10.0.32.0/19", "10.0.64.0/19", "10.0.96.0/19"]
+  private_subnets = ["10.39.32.0/19", "10.39.64.0/19", "10.39.96.0/19"]
 
   create_igw              = true
   enable_nat_gateway      = true
