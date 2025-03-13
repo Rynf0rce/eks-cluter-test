@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+  namespace: shopping-app
+  labels:
+    app: catalog-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: catalog-service
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+        intent: apps
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: intent
+                    operator: In
+                    values:
+                      - apps
+      containers:
+        - name: catalog-service
+          image: nginx:alpine
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 8080
+              name: metrics
+          volumeMounts:
+            - name: catalog-config
+              mountPath: /etc/nginx/conf.d
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "catalog-service"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4317"
+      volumes:
+        - name: catalog-config
+          configMap:
+            name: catalog-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+  namespace: shopping-app
+spec:
+  selector:
+    app: catalog-service
+  ports:
+    - port: 8080
+      targetPort: 80
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-config
+  namespace: shopping-app
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        location /health {
+            return 200 'OK';
+            add_header Content-Type text/plain;
+        }
+
+        location / {
+            default_type application/json;
+            return 200 '{"products": [
+                {"id": 1, "name": "Summer T-Shirt", "price": 29.99, "category": "men", "image": "https://via.placeholder.com/300x400"},
+                {"id": 2, "name": "Casual Jeans", "price": 49.99, "category": "men", "image": "https://via.placeholder.com/300x400"},
+                {"id": 3, "name": "Floral Dress", "price": 59.99, "category": "women", "image": "https://via.placeholder.com/300x400"},
+                {"id": 4, "name": "Leather Jacket", "price": 99.99, "category": "women", "image": "https://via.placeholder.com/300x400"}
+            ]}';
+        }
+    }

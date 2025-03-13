@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: shopping-app
+  labels:
+    app: order-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+        intent: apps
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: intent
+                    operator: In
+                    values:
+                      - apps
+      containers:
+        - name: order-service
+          image: nginx:alpine
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 8080
+              name: metrics
+          volumeMounts:
+            - name: order-config
+              mountPath: /etc/nginx/conf.d
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: msk-config
+                  key: kafka.bootstrap.servers
+            - name: OTEL_SERVICE_NAME
+              value: "order-service"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4317"
+      volumes:
+        - name: order-config
+          configMap:
+            name: order-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: shopping-app
+spec:
+  selector:
+    app: order-service
+  ports:
+    - port: 8080
+      targetPort: 80
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-config
+  namespace: shopping-app
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        location /health {
+            return 200 'OK';
+            add_header Content-Type text/plain;
+        }
+
+        location / {
+            if ($request_method = 'POST') {
+                return 200 '{"status": "success", "message": "Order created and sent to MSK", "order_id": "ORD-12345"}';
+            }
+            if ($request_method = 'GET') {
+                return 200 '{"orders": [{"id": "ORD-12345", "status": "processing", "total": 159.95}]}';
+            }
+            return 404;
+        }
+    }

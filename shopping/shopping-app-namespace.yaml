@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopping-app
+  labels:
+    name: shopping-app
+    app: shopping-app
+    monitoring: "true"

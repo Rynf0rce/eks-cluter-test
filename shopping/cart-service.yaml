@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: shopping-app
+  labels:
+    app: cart-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+        intent: apps
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: intent
+                    operator: In
+                    values:
+                      - apps
+      containers:
+        - name: cart-service
+          image: nginx:alpine
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 8080
+              name: metrics
+          volumeMounts:
+            - name: cart-config
+              mountPath: /etc/nginx/conf.d
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "cart-service"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector:4317"
+      volumes:
+        - name: cart-config
+          configMap:
+            name: cart-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: shopping-app
+spec:
+  selector:
+    app: cart-service
+  ports:
+    - port: 8080
+      targetPort: 80
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cart-config
+  namespace: shopping-app
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        location /health {
+            return 200 'OK';
+            add_header Content-Type text/plain;
+        }
+
+        location / {
+            if ($request_method = 'POST') {
+                return 200 '{"status": "success", "message": "Item added to cart"}';
+            }
+            if ($request_method = 'GET') {
+                return 200 '{"cart_items": []}';
+            }
+            return 404;
+        }
+    }
