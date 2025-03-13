@@ -265,6 +265,14 @@ module "aws-auth" {
     },
   ]
 
+  aws_auth_users = [
+    {
+      userarn  = "arn:aws:iam::782621889128:user/jinwoo"
+      username = "jinwoo"
+      groups   = ["system:masters"]
+    },
+  ]
+
   depends_on = [
     module.eks.cluster_id
   ]
